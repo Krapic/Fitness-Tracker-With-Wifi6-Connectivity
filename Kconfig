@@ -1,0 +1,35 @@
+#
+# Copyright (c) 2022 Nordic Semiconductor ASA
+#
+# SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+#
+
+menu "ADC sensor over WiFi"
+
+config MQTT_SAMPLE_PUB_TOPIC
+	string "MQTT publish topic"
+
+config MQTT_SAMPLE_SUB_TOPIC
+	string "MQTT subscribe topic"
+
+config MQTT_SAMPLE_BROKER_HOSTNAME
+	string "MQTT broker hostname"
+	default "mqtt.nordicsemi.academy"
+
+config SEQUENCE_SAMPLES
+	int "Number of samples to be made on the sequence for each channel."
+	default 5
+
+config SEQUENCE_RESOLUTION
+	int "Set the resolution of the sequence readings."
+	default 12
+
+config RESET_COUNTER_SW0
+	bool "Reset counter when sw0 is pressed"
+	depends on $(dt_alias_enabled,sw0)
+	select GPIO
+	default y
+
+endmenu
+
+source "Kconfig.zephyr"

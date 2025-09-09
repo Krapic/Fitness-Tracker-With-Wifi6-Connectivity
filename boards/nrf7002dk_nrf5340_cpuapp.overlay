@@ -1,0 +1,134 @@
+#include <zephyr/dt-bindings/display/panel.h>
+#include <zephyr/dt-bindings/input/input-event-codes.h>
+#include <zephyr/dt-bindings/lvgl/lvgl.h>
+
+/ {
+    zephyr,user {
+        io-channels = <&adc 0>, <&adc 1>, <&adc 2>;
+    };
+
+    chosen {
+        zephyr,display = &gc9a01;
+        zephyr,pointer = &cst816s;
+        zephyr,input-device = &cst816s;
+    };
+
+    lvgl_pointer_input: lvgl_pointer {
+        compatible = "zephyr,lvgl-pointer-input";
+        status = "okay";
+        input = <&cst816s>;
+    };
+
+    aliases {
+        input = &cst816s;
+    };
+
+    mipi_dbi {
+        compatible = "zephyr,mipi-dbi-spi";
+        dc-gpios = <&gpio0 25 GPIO_ACTIVE_HIGH>;
+        reset-gpios = <&gpio0 26  GPIO_ACTIVE_LOW>;
+        spi-dev = <&spi2>;
+        #address-cells = <1>;
+        #size-cells = <0>;
+
+        gc9a01: gc9a01@0 {
+            status = "okay";
+            compatible = "galaxycore,gc9x01x";
+            reg = <0>;
+            mipi-max-frequency = <100000000>;
+            pixel-format = <PANEL_PIXEL_FORMAT_RGB_888>;
+            height = <240>;
+            width = <240>;
+            display-inversion;
+        };
+    };
+};
+
+&adc {
+    #address-cells = <1>;
+    #size-cells = <0>;
+    status = "okay";
+
+    channel@0 {
+        reg = <0>;
+        zephyr,gain = "ADC_GAIN_1_6";
+        zephyr,reference = "ADC_REF_INTERNAL";
+        zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+        zephyr,input-positive = <NRF_SAADC_AIN0>; /* P0.04 for nRF53xx */
+        zephyr,resolution = <12>;
+    };
+    channel@1 {
+        reg = <1>;
+        zephyr,gain = "ADC_GAIN_1_6";
+        zephyr,reference = "ADC_REF_INTERNAL";
+        zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+        zephyr,input-positive = <NRF_SAADC_AIN1>; /* P0.05 for nRF53xx */
+        zephyr,resolution = <12>;
+    };
+    channel@2 {
+        reg = <2>;
+        zephyr,gain = "ADC_GAIN_1_6";
+        zephyr,reference = "ADC_REF_INTERNAL";
+        zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+        zephyr,input-positive = <NRF_SAADC_AIN2>; /* P0.06 for nRF53xx */
+        zephyr,resolution = <12>;
+    };
+};
+
+&spi2 {
+    status = "okay";
+    pinctrl-0 = <&spi2_default>;
+    pinctrl-1 = <&spi2_sleep>;
+    pinctrl-names = "default", "sleep";
+};
+
+&i2c1 {
+    compatible = "nordic,nrf-twim";
+    status = "okay";
+    clock-frequency = <I2C_BITRATE_FAST>;
+    pinctrl-0 = <&i2c1_default>;
+    pinctrl-1 = <&i2c1_sleep>;
+    pinctrl-names = "default", "sleep";
+
+    cst816s: cst816s@15 {
+        compatible = "hynitron,cst816s";
+        status = "okay";
+        reg = <0x15>;
+        irq-gpios = <&gpio0 7 GPIO_ACTIVE_LOW>;
+        rst-gpios = <&gpio1 14 GPIO_ACTIVE_LOW>;
+    };
+};
+
+&pinctrl {
+    spi2_default: spi2_default {
+        group1 {
+            psels = <NRF_PSEL(SPIM_SCK, 1, 15)>, // SCL
+            <NRF_PSEL(SPIM_MOSI, 1, 13)>; // SDA
+        };
+    };
+
+    spi2_sleep: spi2_sleep {
+        group1 {
+            psels = <NRF_PSEL(SPIM_SCK, 1, 15)>,
+                    <NRF_PSEL(SPIM_MOSI, 1, 13)>;
+            low-power-enable;
+        };
+    };
+
+    i2c1_default: i2c1_default {
+        group1 {
+            psels = <NRF_PSEL(TWIM_SDA, 1, 2)>,
+                    <NRF_PSEL(TWIM_SCL, 1, 3)>;
+        };
+    };
+
+    i2c1_sleep: i2c1_sleep {
+        group1 {
+            psels = <NRF_PSEL(TWIM_SDA, 1, 2)>,
+                    <NRF_PSEL(TWIM_SCL, 1, 3)>;
+            low-power-enable;
+        };
+    };
+};
+
+
