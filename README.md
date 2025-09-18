@@ -73,11 +73,6 @@ west build -b nrf7002dk_nrf5340_cpuapp .
 west flash
 ```
 
-### Run MQTT Subscriber on PC
-```bash
-mosquitto_sub -h <broker-address> -t wifi/fund/nrf/publish/fitness/topic1 --cafile ca.crt -p 8883
-```
-
 ---
 
 ## Author
