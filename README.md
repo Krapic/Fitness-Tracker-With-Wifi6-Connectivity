@@ -78,7 +78,7 @@ west flash
 ## Author
 
 **Frane Krapić**  
-Technical Faculty, University of Rijeka  
+Faculty of Engineering, University of Rijeka  
 September 2025
 
 ---
