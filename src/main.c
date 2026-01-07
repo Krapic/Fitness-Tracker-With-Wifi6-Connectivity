@@ -1038,26 +1038,40 @@ void main(void)
 			float step_time_s = step_time_ms / 1000.0f;
 
 			// 1) Kadenca (instant + EMA)
-			float cadence_hz_inst = 1.0f / fmaxf(step_time_s, 1e-3f);
-			cadence_hz_ema = (1.0f - CADENCE_ALPHA) * cadence_hz_ema + CADENCE_ALPHA * cadence_hz_inst;
+			// Ignoriraj nerealno duge intervale (npr. prvi korak nakon pokretanja)
+			// Maksimalni razumni interval je ~2 sekunde (30 SPM minimum)
+			float cadence_hz_inst;
+			if (step_time_s > 2.0f) {
+				// Prvi korak ili nakon duge pauze - koristi razumnu početnu vrijednost
+				cadence_hz_inst = 1.5f;  // ~90 SPM, normalan hod
+			} else {
+				cadence_hz_inst = 1.0f / step_time_s;
+			}
+
+			// EMA update - pri prvom koraku inicijaliziraj direktno
+			if (cadence_hz_ema < 0.1f) {
+				cadence_hz_ema = cadence_hz_inst;
+			} else {
+				cadence_hz_ema = (1.0f - CADENCE_ALPHA) * cadence_hz_ema + CADENCE_ALPHA * cadence_hz_inst;
+			}
 			float spm = cadence_hz_ema * 60.0f;
 
-			// 2) Adaptivna duljina koraka
-			float step_len_m = step_length_from_cadence(cadence_hz_ema, g_cfg.height_cm, is_running);
+			// 2) Preliminarna duljina koraka za klasifikaciju
+			float step_len_prelim = step_length_from_cadence(cadence_hz_ema, g_cfg.height_cm, is_running);
+			float speed_prelim = step_len_prelim / fmaxf(step_time_s, 0.3f);
 
-			// 3) Brzina iz adaptivne duljine
-			speed_m_s = step_len_m / step_time_s;
-
-			// 4) Klasifikacija
-			bool suggest_run = (spm >= RUN_SPM_HI) || (speed_m_s >= RUN_SPEED_HI);
-			bool suggest_walk = (spm <= RUN_SPM_LO) && (speed_m_s <= RUN_SPEED_LO);
+			// 3) Klasifikacija na temelju kadence i preliminarne brzine
+			bool suggest_run = (spm >= RUN_SPM_HI) || (speed_prelim >= RUN_SPEED_HI);
+			bool suggest_walk = (spm <= RUN_SPM_LO) && (speed_prelim <= RUN_SPEED_LO);
 
 			if (suggest_run)
 				is_running = true;
 			else if (suggest_walk)
 				is_running = false;
 
-			step_len_m = step_length_from_cadence(cadence_hz_ema, g_cfg.height_cm, is_running);
+			// 4) Konačna duljina koraka i brzina s ispravnom klasifikacijom
+			float step_len_m = step_length_from_cadence(cadence_hz_ema, g_cfg.height_cm, is_running);
+			speed_m_s = step_len_m / fmaxf(step_time_s, 0.3f);
 
 			// 5) Ažuriranja metrika
 			steps++;
