@@ -23,6 +23,11 @@
 #include <zephyr/drivers/i2c.h>
 #include <zephyr/sys/__assert.h>
 
+#if defined(CONFIG_MQTT_LIB_TLS)
+#include <zephyr/net/tls_credentials.h>
+#include "ca_certificate.h"
+#endif
+
 // #define STEP_THRESHOLD 0.70f
 #define STEP_LENGTH_M 0.7f
 // #define WEIGHT_KG 70.0f
@@ -274,6 +279,29 @@ static void on_mqtt_disconnect(int result)
 {
 	LOG_INF("MQTT client disconnected: %d", result);
 }
+
+#if defined(CONFIG_MQTT_LIB_TLS)
+// Funkcija za registraciju TLS certifikata
+static int tls_credentials_provision(void)
+{
+	int err;
+
+	LOG_INF("Provisioning TLS credentials...");
+
+	err = tls_credential_add(TLS_SEC_TAG, TLS_CREDENTIAL_CA_CERTIFICATE,
+				 ca_certificate, sizeof(ca_certificate));
+	if (err == -EEXIST) {
+		LOG_INF("CA certificate already exists, skipping");
+		return 0;
+	} else if (err < 0) {
+		LOG_ERR("Failed to add CA certificate: %d", err);
+		return err;
+	}
+
+	LOG_INF("TLS credentials provisioned successfully");
+	return 0;
+}
+#endif
 
 static void button_handler(uint32_t button_state, uint32_t has_changed)
 {
@@ -850,6 +878,16 @@ void main(void)
 	{
 		LOG_ERR("Failed to initialize the buttons library");
 	}
+
+#if defined(CONFIG_MQTT_LIB_TLS)
+	// Postavi TLS certifikate prije MQTT inicijalizacije
+	err = tls_credentials_provision();
+	if (err)
+	{
+		LOG_ERR("Failed to provision TLS credentials, error: %d", err);
+		return;
+	}
+#endif
 
 	// Inicijalizacija MQTT helper knjižnice
 	struct mqtt_helper_cfg config = {
