@@ -43,14 +43,11 @@
 #define HP_WIN_SAMPLES 32  // ~1.3s prozor za klizni prosjek
 #define STD_WIN_SAMPLES 64 // isti prozor za μ i σ
 
-#define MOTION_STD_MIN 0.04f // minimalna "živost" (σ) da uopće brojimo korake
-#define DYN_K 1.5f			 // k u μ + k·σ (1.5–2.5)
-
 // Kadenca i klasifikacija
 #define CADENCE_ALPHA 0.25f // EMA faktor (0..1)
 #define RUN_SPM_HI 150		// granica (koraka/min) za trčanje
 #define RUN_SPM_LO 130		// donja granica (histereza)
-#define RUN_SPEED_HI 0.90f	// m/s granica gore (ostavi kao u kodu)
+#define RUN_SPEED_HI 0.90f	// m/s granica gore
 #define RUN_SPEED_LO 0.70f	// m/s granica dolje (histereza)
 
 static float cadence_hz_ema = 0.0f; // EMA kadence (Hz)
@@ -64,15 +61,10 @@ static float std_buf[STD_WIN_SAMPLES];
 static int std_idx = 0;
 static float std_sum = 0.0f, std_sq_sum = 0.0f;
 
-// anti-shake i peak prominence
-#define PEAK_PROM_MIN 0.12f	  // minimalna "prominencija" peaka u g
-#define MIN_VALLEY_GAP_MS 200 // min. razmak od zadnje doline za stabilnu prominenciju
-
 // Warm-up/priming stanja
 static bool filters_ready = false;
 static uint32_t sample_count = 0;
 #define WARMUP_SAMPLES (HP_WIN_SAMPLES > STD_WIN_SAMPLES ? HP_WIN_SAMPLES : STD_WIN_SAMPLES)
-#define STARTUP_GRACE_MS 1500
 
 // ADC kanali za X, Y, Z
 static const struct adc_dt_spec adc_channel0 = ADC_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), 0);
@@ -112,13 +104,6 @@ static K_SEM_DEFINE(run_app, 0, 1);
 
 // Deklaracija varijable za spremanje klijent ID-a
 static uint8_t client_id[sizeof(CONFIG_BOARD) + 11];
-
-// Kadenca i klasifikacija
-#define CADENCE_ALPHA 0.25f // EMA faktor (0..1)
-#define RUN_SPM_HI 150		// granica (koraka/min) za trčanje
-#define RUN_SPM_LO 130		// donja granica (histereza)
-#define RUN_SPEED_HI 0.90f	// m/s granica gore
-#define RUN_SPEED_LO 0.70f	// m/s granica dolje (histereza)
 
 static void net_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event,
 								   struct net_if *iface)
